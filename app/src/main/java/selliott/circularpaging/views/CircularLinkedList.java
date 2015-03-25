@@ -420,8 +420,13 @@ public class CircularLinkedList<E> extends AbstractList<E> implements List<E> {
     }
 
     public void rotate(final int amount) {
-        final int sign = (int) Math.signum(amount);
-        final int smallestRotationAmount = sign * (Math.abs(amount) % size());
+        int sign = (int) Math.signum(amount);
+        int unsignedSmallestRotationAmount = Math.abs(amount) % size();
+        if (Math.abs(unsignedSmallestRotationAmount) > size() / 2) {
+            sign = -1 * sign;
+            unsignedSmallestRotationAmount = size() - unsignedSmallestRotationAmount;
+        }
+        final int smallestRotationAmount = sign * unsignedSmallestRotationAmount;
         if (sign < 0) {
             for (int i = 0; i > smallestRotationAmount; i--) {
                 voidLink.left = voidLink.left.left;
