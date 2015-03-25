@@ -4,13 +4,11 @@ import android.content.Context;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import selliott.circularpaging.RotatingPagerAdapter;
 
 public class CircularViewPager extends ViewPager {
     private int currentPosition;
-    private Direction movingDirection = Direction.NONE;
     private boolean ignoreUpdate = true;
 
     public CircularViewPager(final Context context) {
@@ -23,26 +21,47 @@ public class CircularViewPager extends ViewPager {
         initPager();
     }
 
-    private static enum Direction {
-        LEFT,
-        RIGHT,
-        NONE
+    @Override
+    public void setCurrentItem(final int item) {
+        ignoreUpdate = false;
+        if (item < 0 || item >= getAdapter().getCount()) {
+            return;
+        }
+        final int diff = item - currentPosition;
+        if (diff >= 0) {
+            ((RotatingPagerAdapter) getAdapter()).moveDirection(diff - 1, CircularViewPager.this);
+            ignoreUpdate = false;
+            super.setCurrentItem(currentPosition + 1);
+        } else if (diff < 0) {
+            ((RotatingPagerAdapter) getAdapter()).moveDirection(diff + 1, CircularViewPager.this);
+            ignoreUpdate = false;
+            super.setCurrentItem(currentPosition - 1);
+        }
     }
 
-    public void setCurrentItemNoRotate(final int item) {
+    @Override
+    public void setCurrentItem(final int item, final boolean smoothScroll) {
         ignoreUpdate = false;
-        super.setCurrentItem(item);
-    }
-
-    public void setCurrentItemNoRotate(final int item, final boolean smoothScroll) {
-        ignoreUpdate = false;
-        super.setCurrentItem(item, smoothScroll);
+        if (item < 0 || item >= getAdapter().getCount()) {
+            return;
+        }
+        final int diff = item - currentPosition;
+        if (diff >= 0) {
+            ((RotatingPagerAdapter) getAdapter()).moveDirection(diff - 1, CircularViewPager.this);
+            ignoreUpdate = false;
+            super.setCurrentItem(currentPosition + 1, smoothScroll);
+        } else if (diff < 0) {
+            ((RotatingPagerAdapter) getAdapter()).moveDirection(diff + 1, CircularViewPager.this);
+            ignoreUpdate = false;
+            super.setCurrentItem(currentPosition - 1, smoothScroll);
+        }
     }
 
     @Override
     public void setAdapter(final PagerAdapter adapter) {
         if (adapter instanceof RotatingPagerAdapter){
             super.setAdapter(adapter);
+            setCurrentItem(0, true);
         }
     }
 
@@ -53,41 +72,17 @@ public class CircularViewPager extends ViewPager {
 
             @Override
             public void onPageSelected(final int position) {
-                Log.d("ViewPager", "currentPosition: " + currentPosition + ", position: " + position);
-                if (currentPosition > position) {
+                if (currentPosition != position) {
                     if (ignoreUpdate) {
                         ignoreUpdate = false;
-                        movingDirection = Direction.LEFT;
-//                        Log.d("ViewPager", "position-a: " + position + ", movingDirection: " + movingDirection);
-                        ((RotatingPagerAdapter) getAdapter()).moveBackward(CircularViewPager.this);
-//                        Log.d("ViewPager", "position-b: " + position + ", movingDirection: " + movingDirection);
+                        ((RotatingPagerAdapter) getAdapter()).moveDirection(position - currentPosition, CircularViewPager.this);
                     } else {
                         currentPosition = position;
-                        movingDirection = Direction.LEFT;
-//                        Log.d("ViewPager", "position-c: " + position + ", movingDirection: " + movingDirection);
-                        ignoreUpdate = true;
-                    }
-                } else if (currentPosition < position) {
-                    if (ignoreUpdate) {
-                        ignoreUpdate = false;
-                        movingDirection = Direction.RIGHT;
-//                        Log.d("ViewPager", "position-d: " + position + ", movingDirection: " + movingDirection);
-                        ((RotatingPagerAdapter) getAdapter()).moveForward(CircularViewPager.this);
-//                        Log.d("ViewPager", "position-e: " + position + ", movingDirection: " + movingDirection);
-                    } else {
-                        currentPosition = position;
-                        movingDirection = Direction.RIGHT;
-//                        Log.d("ViewPager", "position-f: " + position + ", movingDirection: " + movingDirection);
                         ignoreUpdate = true;
                     }
                 } else {
-                    if (ignoreUpdate) {
-                        movingDirection = Direction.NONE;
-//                        Log.d("ViewPager", "position-g: " + position + ", movingDireciton: " + movingDirection);
-                    } else {
+                    if (!ignoreUpdate) {
                         ignoreUpdate = true;
-                        movingDirection = Direction.NONE;
-//                        Log.d("ViewPager", "position-h: " + position + ", movingDireciton: " + movingDirection);
                         getAdapter().instantiateItem(CircularViewPager.this, position);
                     }
                 }
