@@ -96,10 +96,7 @@ public class CircularLinkedList<E> extends AbstractList<E> implements List<E> {
         }
 
         public boolean hasNext(final boolean withoutLooping) {
-            if (withoutLooping) {
-                return currentLink.right != null && nextIndex() < list.size();
-            }
-            return currentLink.right != null;
+            return currentLink.right != null && (withoutLooping || nextIndex() < list.size());
         }
 
         public boolean hasPrevious(final boolean withoutLooping) {
@@ -153,20 +150,17 @@ public class CircularLinkedList<E> extends AbstractList<E> implements List<E> {
             if (expectedModCount == list.modCount) {
                 final Link<ET> next = currentLink.right;
                 final Link<ET> previous = currentLink.left;
-                final Link<ET> oldCurrent = currentLink;
                 next.left = previous;
                 previous.right = next;
                 currentLink = previous;
                 expectedModCount++;
                 list.size--;
                 list.modCount++;
-                if (oldCurrent != list.voidLink) {
-                    if (oldCurrent == list.voidLink.left) {
-                        list.voidLink.left = previous;
-                        pos--;
-                    } else if (oldCurrent == list.voidLink.right) {
-                        list.voidLink.right = next;
-                    }
+                if (next == list.voidLink.right) {
+                    list.voidLink.left = previous;
+                    pos--;
+                } else if (previous == list.voidLink.left) {
+                    list.voidLink.right = next;
                 }
             } else {
                 throw new ConcurrentModificationException();
@@ -352,21 +346,19 @@ public class CircularLinkedList<E> extends AbstractList<E> implements List<E> {
         @Override
         public void remove() {
             if (expectedModCount == list.modCount) {
-                final Link<ET> next = currentLink.left;
-                final Link<ET> previous = currentLink.right;
-                final Link<ET> oldCurrent = currentLink;
-                next.right = previous;
-                previous.left = next;
+                final Link<ET> left = currentLink.left;
+                final Link<ET> right = currentLink.right;
+                left.right = right;
+                right.left = left;
+                currentLink = left;
                 expectedModCount++;
                 list.size--;
                 list.modCount++;
-                if (oldCurrent != list.voidLink) {
-                    if (oldCurrent == list.voidLink.left) {
-                        list.voidLink.left = next;
-                        pos--;
-                    } else if (oldCurrent == list.voidLink.right) {
-                        list.voidLink.right = previous;
-                    }
+                if (right == list.voidLink.right) {
+                    list.voidLink.left = left;
+                    pos--;
+                } else if (left == list.voidLink.left) {
+                    list.voidLink.right = right;
                 }
             } else {
                 throw new ConcurrentModificationException();
